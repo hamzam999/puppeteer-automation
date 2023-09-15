@@ -1,15 +1,24 @@
 {
   "dependencies": {
-    "puppeteer": "^21.2.1"
+    "puppeteer": "^21.2.1",
+    "puppeteer-core": "^21.2.1"
   },
   "name": "puppeteer",
   "version": "1.0.0",
   "description": "Automation for testing",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC"
+  "author": "ermohdhamza0@gmail.com",
+  "license": "ISC",
+  "repository": {
+    "type": "node",
+    "url": "git+https://github.com/hamzam999/puppeteer-automation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hamzam999/puppeteer-automation/issues"
+  },
+  "homepage": "https://github.com/hamzam999/puppeteer-automation#readme",
+  "devDependencies": {}
 }
