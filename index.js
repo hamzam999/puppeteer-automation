@@ -1,7 +1,7 @@
 // import puppeteer from 'puppeteer'
 
 const puppeteer = require('puppeteer')
-const { printConsole, getLocalStorage } = require('./globalFunc')
+const { printConsole, getLocalStorage, getCaptcha } = require('./globalFunc')
 
 const browser_url = 'https://demo.braina.live/'
 const api_url = 'https://con.braina.live/'
@@ -22,67 +22,69 @@ const interceptRequests = async page => {
   await page.setRequestInterception(true)
 
   // Listen for network requests
-  page.on('request', request => {
-    request.continue() // Allow the request to proceed
+  page.on('request', interceptedRequest => {
+    if (interceptedRequest.isInterceptResolutionHandled()) {
+      console.log('interception resolution handled.......')
+      return
+    }
+    if (interceptedRequest.url().includes(api_url)) {
+      console.log('=================================', interceptedRequest.url())
+    } else {
+      // console.log('abort interceptRequests')
+    }
+    interceptedRequest.continue()
   })
 
   // Listen for api_url responses
   page.on('response', async response => {
-    // console.log('response.......')
-    if (response.url().startsWith(api_url) || response.url().startsWith('https://www.google.com/recaptcha/enterprise')) {
-      // Replace with the actual API URL
+    let url = await response.url()
+    if (
+      !url.includes('google') &&
+      !url.endsWith('.png') &&
+      !url.endsWith('.jpg') &&
+      !url.endsWith('.js') &&
+      !url.endsWith('.json') &&
+      !url.endsWith('.css') &&
+      !url.endsWith('.ico') &&
+      !url.includes('static') &&
+      !url.includes('static') &&
+      !url.includes('data:image') &&
+      !url.includes('walletconnect')
+    ) {
+      console.log('response-------', url)
+      console.log()
       const responseBody = await response.text()
-      // console.log('API Response1:', responseBody)
-      // console.log()
+      console.log('API Response1:', responseBody)
     }
-    // console.log('response.......2')
   })
+}
+
+const fillSignupForm = async page => {
+  // Fill the input element and click the checkbox
+  await page.locator('input[type="email"]').fill('teste@ith.tech')
+  await page.click('input[type="checkbox"]')
+  await page.click('button[type="submit"]')
 }
 
 const signupuser = async () => {
   // Launch the browser and open a new blank page
-  const browser = await puppeteer.launch({ args: ['--disable-features=IsolateOrigins,site-per-process,SitePerProcess', '--flag-switches-begin --disable-site-isolation-trials --flag-switches-end'], headless: 'new' })
+  const browser = await puppeteer.launch({ headless: false, channel: 'chrome', args: ['--start-maximized'], defaultViewport: { width: 1920, height: 1080 } })
   const page = await browser.newPage()
 
   setHeaderOpenUrl(page)
-  interceptRequests(page)
-  printConsole(page)
-  // Fill the input element and click the checkbox
-  await page.locator('input[type="email"]').fill('test@ith.tech')
-  await page.click('input[type="checkbox"]')
-  await page.click('button[type="submit"]')
-  getLocalStorage(page)
+  // interceptRequests(page)
 
-  // // Get the value of the input element and checkbox
-  // const inputValue = await page.evaluate(() => {
-  //   const inputElement = document.querySelector('input[type="email"]')
-  //   return inputElement ? inputElement.value : null
-  // })
+  await printConsole(page) // print console
+  const token = await getCaptcha(page)
 
-  // const checkboxValue = await page.evaluate(() => {
-  //   const checkboxElement = document.querySelector('input[type="checkbox"]')
-  //   return checkboxElement ? checkboxElement.checked : false
-  // })
+  if (token) {
+    fillSignupForm(page)
+  } else {
+    console.log('no token found', token)
+    await browser.close()
+  }
 
-  // console.log('Input Value:', inputValue)
-  // console.log('Checkbox Value:', checkboxValue)
-
-  // Use page.evaluate to access localStorage items
-  const localStorageData = await page.evaluate(() => {
-    // Access localStorage and convert it to an object
-    const localStorageObject = {}
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      const value = localStorage.getItem(key)
-      localStorageObject[key] = value
-    }
-    return localStorageObject
-  })
-
-  // Print the retrieved localStorage data
-  console.log('localStorage data:', localStorageData)
-
-  await browser.close()
+  await getLocalStorage(page)
 }
 
 signupuser()
